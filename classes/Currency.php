@@ -158,6 +158,7 @@ class CurrencyCore extends ObjectModel
      * @var string
      */
     public $prefix = null;
+
     /**
      * contains the sign to display after price, according to its format.
      *
@@ -169,7 +170,7 @@ class CurrencyCore extends ObjectModel
      * CurrencyCore constructor.
      *
      * @param null $id
-     * @param null $idLang
+     * @param false|null $idLang if null or false, default language will be used
      * @param null $idShop
      */
     public function __construct($id = null, $idLang = null, $idShop = null)
@@ -179,7 +180,7 @@ class CurrencyCore extends ObjectModel
         if ($this->iso_code) {
             // As the CLDR used to return a string even if in multi shop / lang,
             // We force only one string to be returned
-            if (null === $idLang) {
+            if (empty($idLang)) {
                 $idLang = Context::getContext()->language->id;
             }
             if (is_array($this->symbol)) {
@@ -263,11 +264,7 @@ class CurrencyCore extends ObjectModel
     {
         $idCurrencyExists = Currency::getIdByIsoCode($isoCode, (int) $idShop);
 
-        if ($idCurrencyExists) {
-            return true;
-        } else {
-            return false;
-        }
+        return (bool) $idCurrencyExists;
     }
 
     /**
@@ -786,6 +783,11 @@ class CurrencyCore extends ObjectModel
             $cldrLocale = $localeRepoCLDR->getLocale($language->locale);
             // CLDR currency gives data from CLDR reference, for the given language
             $cldrCurrency = $cldrLocale->getCurrency($this->iso_code);
+
+            if (empty($cldrCurrency)) {
+                // The currency may not be declared in the locale, eg with custom iso code
+                continue;
+            }
 
             $symbol = (string) $cldrCurrency->getSymbol();
             if (empty($symbol)) {

@@ -111,6 +111,8 @@ class CustomerController extends AbstractAdminController
     /**
      * Show customer create form & handle processing of it.
      *
+     * @AdminSecurity("is_granted(['create'], request.get('_legacy_controller'))")
+     *
      * @param Request $request
      *
      * @return Response
@@ -155,11 +157,14 @@ class CustomerController extends AbstractAdminController
             'isB2bFeatureActive' => $this->get('prestashop.core.b2b.b2b_feature')->isActive(),
             'minPasswordLength' => Password::MIN_LENGTH,
             'displayInIframe' => $request->query->has('submitFormAjax'),
+            'help_link' => $this->generateSidebarLink($request->attributes->get('_legacy_controller')),
         ]);
     }
 
     /**
      * Show customer edit form & handle processing of it.
+     *
+     * @AdminSecurity("is_granted(['update'], request.get('_legacy_controller'))")
      *
      * @param int $customerId
      * @param Request $request
@@ -169,33 +174,24 @@ class CustomerController extends AbstractAdminController
     public function editAction($customerId, Request $request)
     {
         $this->addGroupSelectionToRequest($request);
-
         try {
             /** @var ViewableCustomer $customerInformation */
             $customerInformation = $this->getQueryBus()->handle(new GetCustomerForViewing((int) $customerId));
-
             $customerFormOptions = [
                 'is_password_required' => false,
             ];
             $customerForm = $this->get('prestashop.core.form.identifiable_object.builder.customer_form_builder')
                 ->getFormFor((int) $customerId, [], $customerFormOptions);
             $customerForm->handleRequest($request);
-
             $customerFormHandler = $this->get('prestashop.core.form.identifiable_object.handler.customer_form_handler');
             $result = $customerFormHandler->handleFor((int) $customerId, $customerForm);
-
             if ($result->isSubmitted() && $result->isValid()) {
-                if ($request->query->has('back')) {
-                    return $this->redirect(urldecode($request->query->get('back')));
-                }
-
                 $this->addFlash('success', $this->trans('Successful update.', 'Admin.Notifications.Success'));
 
                 return $this->redirectToRoute('admin_customers_index');
             }
         } catch (CustomerException $e) {
             $this->addFlash('error', $this->getErrorMessageForException($e, $this->getErrorMessages($e)));
-
             if ($e instanceof CustomerNotFoundException) {
                 return $this->redirectToRoute('admin_customers_index');
             }
@@ -206,6 +202,7 @@ class CustomerController extends AbstractAdminController
             'customerInformation' => $customerInformation,
             'isB2bFeatureActive' => $this->get('prestashop.core.b2b.b2b_feature')->isActive(),
             'minPasswordLength' => Password::MIN_LENGTH,
+            'help_link' => $this->generateSidebarLink($request->attributes->get('_legacy_controller')),
         ]);
     }
 
@@ -636,6 +633,8 @@ class CustomerController extends AbstractAdminController
 
     /**
      * Export filtered customers
+     *
+     * @AdminSecurity("is_granted(['read'], request.get('_legacy_controller'))")
      *
      * @param CustomerFilters $filters
      *

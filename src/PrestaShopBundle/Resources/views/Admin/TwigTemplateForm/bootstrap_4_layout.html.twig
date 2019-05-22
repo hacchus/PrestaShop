@@ -225,7 +225,7 @@
         <ul class="translationsLocales nav nav-pills">
             {% for translationsFields in form %}
                 <li class="nav-item">
-                    <a href="#" class="{% if defaultLocale.id_lang == translationsFields.vars.name %}active{% endif %} nav-link" data-toggle="tab" data-target=".translationsFields-{{ translationsFields.vars.id }}">
+                    <a href="#" data-locale="{{ translationsFields.vars.label }}" class="{% if defaultLocale.id_lang == translationsFields.vars.name %}active{% endif %} nav-link" data-toggle="tab" data-target=".translationsFields-{{ translationsFields.vars.id }}">
                         {{ translationsFields.vars.label|capitalize }}
                     </a>
                 </li>
@@ -235,7 +235,7 @@
 
         <div class="translationsFields tab-content">
             {% for translationsFields in form %}
-                <div class="translationsFields-{{ translationsFields.vars.id }} tab-pane translation-field {% if hideTabs == false and form|length > 1 %}panel panel-default{% endif %} {% if defaultLocale.id_lang == translationsFields.vars.name %}show active{% endif %} {% if not form.vars.valid %}field-error{% endif %} translation-label-{{ translationsFields.vars.label }}">
+                <div data-locale="{{ translationsFields.vars.label }}" class="translationsFields-{{ translationsFields.vars.id }} tab-pane translation-field {% if hideTabs == false and form|length > 1 %}panel panel-default{% endif %} {% if defaultLocale.id_lang == translationsFields.vars.name %}show active{% endif %} {% if not form.vars.valid %}field-error{% endif %} translation-label-{{ translationsFields.vars.label }}">
                     {{ form_errors(translationsFields) }}
                     {{ form_widget(translationsFields) }}
                 </div>
@@ -358,13 +358,12 @@
                 class="btn btn-primary grid-search-button d-block float-right"
                 title="{{ 'Search'|trans({}, 'Admin.Actions') }}"
                 name="{{ full_name }}[search]"
-                {% if disable_search_button %} disabled="true" {% endif %}
         >
           <i class="material-icons">search</i>
           {{ 'Search'|trans({}, 'Admin.Actions') }}
         </button>
-
-          <div class="js-grid-reset-button" {% if not show_reset_button %} hidden {% endif %}>
+      {% if show_reset_button %}
+          <div class="js-grid-reset-button">
           <div class="clearfix"></div>
             <button type="reset"
                     name="{{ full_name }}[reset]"
@@ -376,6 +375,7 @@
               {{ 'Reset'|trans({}, 'Admin.Actions') }}
             </button>
           </div>
+      {% endif %}
     {% endspaceless %}
 {% endblock search_and_reset_widget %}
 
@@ -754,3 +754,29 @@
    </span>
   </div>
 {% endblock generatable_text_widget %}
+
+{% block text_with_recommended_length_widget %}
+  {% set attr = attr|merge({
+    'data-recommended-length-counter': '#' ~ id ~ '_recommended_length_counter',
+    'class': 'js-recommended-length-input'
+  }) -%}
+
+  {% if input_type == 'textarea' %}
+    {{- block('textarea_widget') -}}
+  {% else %}
+    {{- block('form_widget_simple') -}}
+  {% endif %}
+
+  <small class="form-text text-muted text-right"
+         id="{{ id }}_recommended_length_counter"
+  >
+    <em>
+      {{ '[1][/1] of [2][/2] characters used (recommended)'|trans({}, 'Admin.Catalog.Feature')|replace({
+        '[1]': '<span class="js-current-length">' ~ value|length,
+        '[/1]': '</span>',
+        '[2]': '<span>' ~ recommended_length,
+        '[/2]': '</span>',
+      })|raw }}
+    </em>
+  </small>
+{% endblock text_with_recommended_length_widget %}
